@@ -1,36 +1,72 @@
 # Renewable Energy Project Dispute Characterization
 
-This codebase analyzes public perceptions of renewable energy projects (solar and wind) by generating search results, scraping content, scoring relevance, and summarizing findings using LLMs and various APIs.
+This codebase analyzes public perceptions of renewable energy projects (solar and wind) by collecting online content, scoring relevance using LLMs, and extracting structured data about opposition and support patterns.
 
-## Table of Contents
-- [Dependencies](#dependencies)
-- [Environment Setup](#environment-setup)
-- [Data Sources](#data-sources)
-- [Process Steps](#process-steps)
-- [File Structure](#file-structure)
-- [Visualization](#visualization)
+## Project Structure
 
-## Dependencies
+```
+dispute-characterization/
+├── data/
+│   ├── raw/                    # Original source data
+│   │   ├── eia_plants_2022.csv
+│   │   ├── eia_generation_2022.csv
+│   │   └── demographic_data/
+│   ├── processed/              # Intermediate processing results
+│   │   ├── search_ready_plants.csv
+│   │   ├── plants_with_content.csv
+│   │   ├── plants_with_relevance.csv
+│   │   └── results/            # Per-plant JSON outputs
+│   │       ├── search/         # Google search results
+│   │       ├── content/        # Scraped article content
+│   │       ├── article_relevance/  # Article-level scores
+│   │       ├── content_relevance/  # Project-level relevance
+│   │       └── scores/         # Opposition analysis results
+│   └── final/                  # Analysis-ready datasets
+│       ├── complete_analysis_dataset.pkl
+│       └── analysis_with_relevance.pkl
+├── src/
+│   ├── pipeline/
+│   │   └── process_projects.py # Main processing pipeline
+│   ├── scraping/
+│   │   └── execute_searches.py # Search result generation
+│   ├── validation/
+│   │   ├── validate_results_app.py
+│   │   ├── simple_labeling_app.py
+│   │   └── analyze_validation_results.py
+│   └── analysis/
+│       └── generate_visualizations.py
+├── viz/                        # Generated outputs
+├── config/
+│   └── config.py              # Centralized configuration
+├── utils/
+│   └── s3_data.py             # S3 data management
+└── archive/                   # Unused/deprecated files
+```
 
-### Python Packages
+## Installation
 
 ### System Dependencies
 
 ```bash
-# For Ubuntu/Debian
+# Ubuntu/Debian
 apt-get install libmagic-dev libgl1-mesa-glx libglib2.0-0 python3-opencv poppler-utils tesseract-ocr
 
-# For MacOS
+# macOS
 brew install libmagic poppler tesseract
+```
+
+### Python Dependencies
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Environment Setup
 
-Create a `.env` file with the following API keys:
+Create a `.env` file with required API keys:
 
-```
+```bash
 OPENAI_API_KEY=<your-key>
-OPENAI_ORG=<your-org>
 ANTHROPIC_API_KEY=<your-key>
 BRIGHTDATA_SERP_KEY=<your-key>
 AWS_DEFAULT_REGION=<region>
@@ -38,124 +74,95 @@ AWS_ACCESS_KEY_ID=<your-key>
 AWS_SECRET_ACCESS_KEY=<your-key>
 ```
 
-## Data Sources
+## Data Pipeline
 
-- EIA 2022 dataset containing renewable energy project information
-- Input files needed:
-  - `ready_to_search.csv`: Contains plant codes, search queries, and plant info
-  - `post_content_plants.csv`: Used for relevance scoring
-  - `post_relevance_plants.csv`: Used for final analysis
+**Flow**: Raw EIA Data → Query Generation → Search → Content Scraping → Relevance Scoring → Opposition Analysis → Final Dataset
 
-## Process Steps
+1. **Raw Data**: EIA 2022 plant and generation data
+2. **Query Generation**: Create search queries from plant info
+3. **Search Execution**: Generate Google search results via BrightData
+4. **Content Processing**: Scrape and parse article content via Modal
+5. **Relevance Scoring**: Score article relevance (1-5 scale)
+6. **Opposition Analysis**: Extract 15 binary opposition/support variables
+7. **Final Dataset**: Combine results into analysis-ready format
 
-### 1. Generate Search Results
-**File**: `search.py`
-**Function**: `get_search_results()`
+### Running the Pipeline
 
-This step uses BrightData to generate Google search results for each project.
+The pipeline is executed in stages via `src/pipeline/process_projects.py`. Uncomment the appropriate section for each stage:
+
+```bash
+# Stage 1: Generate search results
+python src/scraping/execute_searches.py
+
+# Stages 2-4: Run remaining pipeline stages
+python src/pipeline/process_projects.py
+```
+
+### S3 Data Access
+
+Large data files (25k+ per-plant JSONs) are stored in S3. Use the utilities in `utils/s3_data.py`:
 
 ```python
-# Uncomment in search.py main():
-df = pd.read_csv('ready_to_search.csv')
-queries = list(df['search_query'])
-plant_codes = list(df['plant_code'])
+from utils.s3_data import ensure_data_available, sync_from_s3
 
-with ThreadPoolExecutor(max_workers=100) as executor:
-    future_to_plant_code = {executor.submit(get_search_results, query): plant_code
-                       for plant_code, query in zip(plant_codes, queries)
-                       if not os.path.exists(f'results/search/{plant_code}.json')}
+# Download a specific file
+path = ensure_data_available("data/final/analysis_with_relevance.pkl")
+
+# Sync all data from S3
+sync_from_s3()
 ```
 
-**Output**: `results/search/{plant_code}.json`
+## Opposition Variables
 
-### 2. Content Scraping
-**File**: `local_parallel.py`
-**Function**: `partition_content()`
+The pipeline extracts 15 binary variables:
 
-Uses unstructured library to parse HTML/PDF content from search results.
+| Variable | Description |
+|----------|-------------|
+| `mention_support` | Any mention of project support |
+| `mention_opp` | Any mention of project opposition |
+| `physical_opp` | Physical opposition (protests, demonstrations) |
+| `policy_opp` | Legislative/policy opposition |
+| `legal_opp` | Legal challenges and court actions |
+| `opinion_opp` | Opinion editorials opposing project |
+| `environmental_opp` | Environmental concerns |
+| `participation_opp` | Lack of community participation concerns |
+| `tribal_opp` | Tribal/Indigenous opposition |
+| `health_opp` | Health and safety concerns |
+| `intergov_opp` | Intergovernmental disagreements |
+| `property_opp` | Property value impact concerns |
+| `compensation` | Compensation/community benefits issues |
+| `delay` | Evidence of project delays |
+| `co_land_use` | Evidence of co-existing land uses |
 
-```python
-# Run in local_parallel.py:
-plant_codes = pd.read_csv('ready_to_search.csv')['plant_code']
-plant_codes = [pc for pc in plant_codes
-    if not os.path.exists(f'results/content/{pc}.json')]
+## Validation
+
+Human validation interface for assessing model accuracy:
+
+```bash
+# Run validation app
+streamlit run src/validation/validate_results_app.py
+
+# Simple labeling interface
+streamlit run src/validation/simple_labeling_app.py
+
+# Analyze validation results
+python src/validation/analyze_validation_results.py
 ```
 
-**Output**: `results/content/{plant_code}.json`
+## Visualization
 
-### 3. Initial Relevance Scoring
-**File**: `local_parallel.py`
-**Functions**: `get_relevance_scores()`, `process_plant_code()`
+Generate publication-ready plots:
 
-Scores each article's relevance on a 1-5 scale using Claude API.
-
-Scoring criteria defined in `ProjectPerceptionsDetailed` class in `util_archive.py`:
-- Relevance to specific project
-- Mentions of support/opposition
-- Types of opposition (physical, legal, etc.)
-- Environmental/tribal concerns
-- Property value impacts
-- Project delays
-
-**Output**: `results/article_relevance/{plant_code}.json`
-
-### 4. Content Relevance Analysis
-**File**: `local_parallel.py`
-**Function**: `get_content_relevance()`
-
-Analyzes overall content relevance for each project.
-
-**Output**: `results/content_relevance/{plant_code}.json`
-
-### 5. Project Summary Generation
-**File**: `local_parallel.py`
-**Function**: `get_project_summary()`
-
-Generates detailed project summaries and binary scores for various opposition/support metrics.
-
-**Output**: `results/scores/{plant_code}.json`
-
-### 6. Visualization
-**Viz Generation Notebook**: `plots.ipynb`
-
-Creates visualizations of the analysis results:
-- Distribution of relevance scores
-- Correlation between capacity and relevance
-- Other project metrics
-
-**Output Files**: `visualizations/`
-
-
-## File Structure
-
-```
-.
-├── results/
-│   ├── search/            # Raw search results
-│   ├── content/           # Scraped content
-│   ├── article_relevance/ # Article-level scores
-│   ├── content_relevance/ # Project-level relevance
-│   └── scores/           # Final project summaries
-├── visualizations/
-│   └── [file].png        # Visualization output files
-├── search.py             # Search result generation
-├── local_parallel.py     # Main processing code
-└── util_archive.py       # Helper classes/functions
-└── plots.ipynb           # Python notebook to generate visualizations from final results
+```bash
+python src/analysis/generate_visualizations.py
 ```
 
-## Running the Analysis
+Or use the Jupyter notebook `plots.ipynb` for interactive analysis.
 
-1. Ensure all dependencies are installed and environment variables are set
-2. Create necessary directories in `results/`
-3. Run each step in sequence, commenting/uncommenting relevant sections in main() functions
-4. Monitor output files to ensure each step completes successfully
-5. Generate visualizations using plot.py
+## Configuration
 
-## Notes
+Centralized path management in `config/config.py`. Adjust paths and settings as needed for your environment.
 
-- The codebase uses both OpenAI and Anthropic APIs for different analysis steps
-- BrightData is used for reliable search result generation
-- Parallel processing is implemented for efficiency
-- Results are cached in JSON files to allow for partial runs
-```
+## License
+
+See LICENSE file.

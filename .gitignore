@@ -1,3 +1,24 @@
+# Project-specific folders and files to ignore
+exploratory/
+results/
+visualizations/
+validation_viz/
+demographic_data/
+cb_2022_us_county_5m/
+.claude/
+
+# Data directories (managed via S3 - use utils/s3_data.py to sync)
+data/
+archive/
+viz/
+
+# Security: Credential files (NEVER commit these)
+.env
+.env.local
+awsrootkey.csv
+gcloud.json
+secrets.toml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -112,7 +133,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
