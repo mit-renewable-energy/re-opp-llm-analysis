@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-Renewable Energy Project Dispute Characterization - Visualization Generator
-Converted from plots.ipynb to a replicable Python script
+Visualization Generator for Renewable Energy Opposition LLM Analysis
 
-This script generates all publication-ready visualizations for the renewable energy
-dispute characterization project. It maintains all functionality from the original
-notebook while using configurable paths and settings.
+This script generates publication-ready visualizations for the renewable energy
+opposition analysis project. Converted from plots.ipynb to a replicable script.
 """
 
 import pandas as pd

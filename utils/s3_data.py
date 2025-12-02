@@ -1,5 +1,5 @@
 """
-S3 Data Management Utility for Renewable Energy Dispute Characterization
+S3 Data Management Utility for Renewable Energy Opposition LLM Analysis
 
 This module provides functions to:
 1. Upload local data files to S3

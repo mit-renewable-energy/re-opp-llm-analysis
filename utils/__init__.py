@@ -1,5 +1,5 @@
 """
-Utility modules for the Renewable Energy Dispute Characterization project.
+Utility modules for Renewable Energy Opposition LLM Analysis.
 """
 
 from .s3_data import (

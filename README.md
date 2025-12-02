@@ -1,11 +1,11 @@
-# Renewable Energy Project Dispute Characterization
+# Renewable Energy Opposition LLM Analysis
 
-This codebase analyzes public perceptions of renewable energy projects (solar and wind) by collecting online content, scoring relevance using LLMs, and extracting structured data about opposition and support patterns.
+Analyzes public perceptions of U.S. renewable energy projects (solar and wind) using EIA 2022 data. The pipeline collects online content, scores relevance using LLMs, and extracts structured data about opposition and support patterns.
 
 ## Project Structure
 
 ```
-dispute-characterization/
+re-opp-llm-analysis/
 ├── data/
 │   ├── raw/                    # Original source data (EIA 2022)
 │   ├── processed/              # Intermediate processing results

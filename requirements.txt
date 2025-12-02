@@ -1,4 +1,4 @@
-# Requirements for Renewable Energy Dispute Characterization Project
+# Requirements for Renewable Energy Opposition LLM Analysis
 # Dependencies for running the data pipeline
 
 # Data Processing & Analysis

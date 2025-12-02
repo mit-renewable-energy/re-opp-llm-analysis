@@ -1,5 +1,5 @@
 """
-Configuration module for Renewable Energy Project Dispute Characterization
+Configuration module for Renewable Energy Opposition LLM Analysis
 Provides centralized settings for paths, visualization, and processing parameters
 
 S3 Integration:

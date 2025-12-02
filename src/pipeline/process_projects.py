@@ -1,5 +1,5 @@
 """
-Project Processing Pipeline for Renewable Energy Dispute Characterization
+Project Processing Pipeline for Renewable Energy Opposition LLM Analysis
 
 This module implements the core data processing pipeline:
 1. Content scraping from search results (via Modal)
