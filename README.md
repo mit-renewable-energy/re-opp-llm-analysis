@@ -7,40 +7,21 @@ This codebase analyzes public perceptions of renewable energy projects (solar an
 ```
 dispute-characterization/
 ├── data/
-│   ├── raw/                    # Original source data
-│   │   ├── eia_plants_2022.csv
-│   │   ├── eia_generation_2022.csv
-│   │   └── demographic_data/
+│   ├── raw/                    # Original source data (EIA 2022)
 │   ├── processed/              # Intermediate processing results
-│   │   ├── search_ready_plants.csv
-│   │   ├── plants_with_content.csv
-│   │   ├── plants_with_relevance.csv
 │   │   └── results/            # Per-plant JSON outputs
-│   │       ├── search/         # Google search results
-│   │       ├── content/        # Scraped article content
-│   │       ├── article_relevance/  # Article-level scores
-│   │       ├── content_relevance/  # Project-level relevance
-│   │       └── scores/         # Opposition analysis results
 │   └── final/                  # Analysis-ready datasets
-│       ├── complete_analysis_dataset.pkl
-│       └── analysis_with_relevance.pkl
 ├── src/
-│   ├── pipeline/
-│   │   └── process_projects.py # Main processing pipeline
-│   ├── scraping/
-│   │   └── execute_searches.py # Search result generation
-│   ├── validation/
-│   │   ├── validate_results_app.py
-│   │   ├── simple_labeling_app.py
-│   │   └── analyze_validation_results.py
-│   └── analysis/
-│       └── generate_visualizations.py
+│   ├── pipeline/               # Main processing pipeline (stages 2-4)
+│   ├── scraping/               # Search result generation (stage 1)
+│   ├── validation/             # Human validation interfaces
+│   └── analysis/               # Visualization generation
+├── scripts/                    # Paper-specific plot/table generation
+├── notebooks/                  # Interactive analysis notebooks
+├── config/                     # Configuration and styling
+├── utils/                      # S3 data management utilities
 ├── viz/                        # Generated outputs
-├── config/
-│   └── config.py              # Centralized configuration
-├── utils/
-│   └── s3_data.py             # S3 data management
-└── archive/                   # Unused/deprecated files
+└── archive/                    # Deprecated files
 ```
 
 ## Installation
@@ -157,7 +138,7 @@ Generate publication-ready plots:
 python src/analysis/generate_visualizations.py
 ```
 
-Or use the Jupyter notebook `plots.ipynb` for interactive analysis.
+For interactive analysis, see `notebooks/plots.ipynb` and `notebooks/analysis.ipynb`.
 
 ## Configuration
 
