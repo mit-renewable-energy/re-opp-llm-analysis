@@ -55,11 +55,32 @@ AWS_ACCESS_KEY_ID=<your-key>
 AWS_SECRET_ACCESS_KEY=<your-key>
 ```
 
+## Data Sources
+
+- **EIA-860 (2022)**: Generator-level data from the [U.S. Energy Information Administration](https://www.eia.gov/electricity/data.php) (download "Annual" under "Generator-level data")
+- **Demographics**: U.S. Census data joined with EPA EJScreen (EJScreen no longer hosted by EPA as of 2025; archived copy at [pedp-ejscreen.azurewebsites.net](https://pedp-ejscreen.azurewebsites.net/))
+
+See `data/raw/DATA_SOURCES.md` for detailed documentation of input files.
+
+## Data Availability
+
+**Harvard Dataverse** (link forthcoming): Contains the essential datasets for replication:
+- `raw_data.zip` - Input data (EIA-860, demographics, state mappings)
+- `analysis_results.csv` - Final opposition/support scores for all projects
+- `validation_results.json` - Human validation accuracy labels
+
+**Full pipeline data** (25k+ per-plant JSON files) available via S3 on request.
+
+To export Dataverse-ready files from this repository:
+```bash
+python scripts/export_dataverse.py
+```
+
 ## Data Pipeline
 
 **Flow**: Raw EIA Data → Query Generation → Search → Content Scraping → Relevance Scoring → Opposition Analysis → Final Dataset
 
-1. **Raw Data**: EIA 2022 plant and generation data
+1. **Raw Data**: EIA-860 2022 plant and generation data
 2. **Query Generation**: Create search queries from plant info
 3. **Search Execution**: Generate Google search results via BrightData
 4. **Content Processing**: Scrape and parse article content via Modal

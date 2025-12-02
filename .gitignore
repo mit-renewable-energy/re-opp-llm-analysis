@@ -9,6 +9,7 @@ cb_2022_us_county_5m/
 
 # Data directories (managed via S3 - use utils/s3_data.py to sync)
 data/
+!data/raw/DATA_SOURCES.md
 archive/
 viz/
 
