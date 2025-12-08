@@ -64,7 +64,7 @@ See `data/raw/DATA_SOURCES.md` for detailed documentation of input files.
 
 ## Data Availability
 
-**Harvard Dataverse** (link forthcoming): Contains the essential datasets for replication:
+**[Harvard Dataverse](https://doi.org/10.7910/DVN/1J3WW1)**: Contains the essential datasets for replication:
 - `raw_data.zip` - Input data (EIA-860, demographics, state mappings)
 - `analysis_results.csv` - Final opposition/support scores for all projects
 - `validation_results.json` - Human validation accuracy labels
