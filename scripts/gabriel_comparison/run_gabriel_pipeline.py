@@ -211,7 +211,7 @@ async def run_pipeline(stage: str, sample: int, model: str) -> None:
         (OUTPUT_DIR / subdir).mkdir(parents=True, exist_ok=True)
 
     stages_to_run = (
-        ["article_relevance", "content_relevance", "opposition", "narrative"]
+        ["content_relevance", "opposition", "narrative"]
         if stage == "all"
         else [stage]
     )
