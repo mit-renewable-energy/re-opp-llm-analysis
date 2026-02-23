@@ -56,12 +56,17 @@ def load_original_article_relevance(plant_codes: list[str]) -> pd.DataFrame:
 def load_original_content_relevance(plant_codes: list[str]) -> pd.DataFrame:
     """Load original content-level relevance scores from per-plant JSONs."""
     rows = []
-    for pc in plant_codes:
+    for i, pc in enumerate(plant_codes):
+        if i % 500 == 0:
+            print(f"  Loading content relevance: {i}/{len(plant_codes)}...", flush=True)
         path = RESULTS_DIR / "content_relevance" / f"{pc}.json"
         if not path.exists():
             continue
-        with open(path) as f:
-            data = json.load(f)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
         if not data:
             continue
         scores = data.get("score_and_justification", [])
@@ -70,18 +75,24 @@ def load_original_content_relevance(plant_codes: list[str]) -> pd.DataFrame:
                 "plant_code": pc,
                 "original_score": scores[0]["score"],
             })
+    print(f"  Loaded {len(rows)} content relevance scores", flush=True)
     return pd.DataFrame(rows)
 
 
 def load_original_opposition_scores(plant_codes: list[str]) -> pd.DataFrame:
     """Load original opposition binary variables from per-plant score JSONs."""
     rows = []
-    for pc in plant_codes:
+    for i, pc in enumerate(plant_codes):
+        if i % 500 == 0:
+            print(f"  Loading opposition scores: {i}/{len(plant_codes)}...", flush=True)
         path = RESULTS_DIR / "scores" / f"{pc}.json"
         if not path.exists():
             continue
-        with open(path) as f:
-            data = json.load(f)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
 
         # Handle nested structure: data may have "all_scores_and_sources" or "scores"
         scores_list = data.get("all_scores_and_sources", data.get("scores", []))
@@ -101,6 +112,7 @@ def load_original_opposition_scores(plant_codes: list[str]) -> pd.DataFrame:
                 row[var] = 0
         row["original_narrative"] = entry.get("narrative", "")
         rows.append(row)
+    print(f"  Loaded {len(rows)} opposition scores", flush=True)
     return pd.DataFrame(rows)
 
 
@@ -229,8 +241,8 @@ def compare_opposition() -> str:
         if g_col not in merged.columns or o_col not in merged.columns:
             continue
 
-        g = merged[g_col].astype(int)
-        o = merged[o_col].astype(int)
+        g = merged[g_col].fillna(0).astype(int)
+        o = merged[o_col].fillna(0).astype(int)
 
         accuracy = (g == o).mean()
         tp = ((g == 1) & (o == 1)).sum()

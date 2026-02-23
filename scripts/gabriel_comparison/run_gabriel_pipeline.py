@@ -69,18 +69,23 @@ def load_content_json(plant_code: str) -> dict | None:
     path = RESULTS_DIR / "content" / f"{plant_code}.json"
     if not path.exists():
         return None
-    with open(path) as f:
-        return json.load(f)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def load_relevant_content_json(plant_code: str) -> dict | None:
     """Load relevant_content JSON (filtered articles) for a single plant."""
     path = RESULTS_DIR / "relevant_content" / f"{plant_code}.json"
     if not path.exists():
-        # Fallback to content JSON
         return load_content_json(plant_code)
-    with open(path) as f:
-        return json.load(f)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return load_content_json(plant_code)
 
 
 def truncate(text: str, max_chars: int = MAX_CONTENT_CHARS) -> str:
@@ -110,8 +115,11 @@ def prepare_article_relevance_df(
         search_path = RESULTS_DIR / "search" / f"{pc}.json"
         if not search_path.exists():
             continue
-        with open(search_path) as f:
-            search_data = json.load(f)
+        try:
+            with open(search_path) as f:
+                search_data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
 
         organic = search_data.get("organic", [])
         if not organic:
@@ -134,34 +142,51 @@ def prepare_article_relevance_df(
     return pd.DataFrame(rows)
 
 
+def preload_all_content(plants_df: pd.DataFrame, sample_codes: list) -> dict:
+    """
+    Load content and relevant_content JSONs for all sample plants once.
+    Returns dict keyed by plant_code with {content, relevant_content, plant_info}.
+    """
+    cache = {}
+    subset = plants_df[plants_df["plant_code"].isin(sample_codes)]
+    for i, (_, row) in enumerate(subset.iterrows()):
+        if i % 500 == 0:
+            print(f"  Pre-loading data: {i}/{len(subset)}...", flush=True)
+        pc = row["plant_code"]
+        cache[pc] = {
+            "plant_info": row["plant_info"],
+            "content": load_content_json(pc),
+            "relevant_content": load_relevant_content_json(pc),
+        }
+    print(f"  Pre-loaded {len(cache)} plants", flush=True)
+    return cache
+
+
 def prepare_content_relevance_df(
-    plants_df: pd.DataFrame, sample_codes: list[str]
+    plants_df: pd.DataFrame, sample_codes: list[str], cache: dict
 ) -> pd.DataFrame:
     """
     Build a DataFrame with one row per plant_code for content-level relevance
     rating. Concatenates all article text and embeds plant_info.
     """
     rows = []
-    for _, row in plants_df[plants_df["plant_code"].isin(sample_codes)].iterrows():
-        pc = row["plant_code"]
-        plant_info = row["plant_info"]
-        content = load_content_json(pc)
-        if content is None:
+    for pc in sample_codes:
+        entry = cache.get(pc)
+        if entry is None or entry["content"] is None:
             continue
-
-        full_text = content.get("full_text", "")
+        plant_info = entry["plant_info"]
+        full_text = entry["content"].get("full_text", "")
         content_text = truncate(f"Project: {plant_info}\n\n{full_text}")
         rows.append({
             "plant_code": str(pc),
             "content_text": content_text,
             "plant_info": plant_info,
         })
-
     return pd.DataFrame(rows)
 
 
 def prepare_opposition_df(
-    plants_df: pd.DataFrame, sample_codes: list[str]
+    plants_df: pd.DataFrame, sample_codes: list[str], cache: dict
 ) -> pd.DataFrame:
     """
     Build a DataFrame with one row per plant_code for opposition classification
@@ -169,21 +194,20 @@ def prepare_opposition_df(
     full_text.
     """
     rows = []
-    for _, row in plants_df[plants_df["plant_code"].isin(sample_codes)].iterrows():
-        pc = row["plant_code"]
-        plant_info = row["plant_info"]
-        content = load_relevant_content_json(pc)
-        if content is None:
+    for pc in sample_codes:
+        entry = cache.get(pc)
+        if entry is None:
             continue
-
-        # relevant_content JSONs have relevant_content_text; fallback to full_text
-        text = content.get("relevant_content_text", content.get("full_text", ""))
+        rc = entry["relevant_content"]
+        if rc is None:
+            continue
+        plant_info = entry["plant_info"]
+        text = rc.get("relevant_content_text", rc.get("full_text", ""))
         content_text = truncate(f"Project: {plant_info}\n\n{text}")
         rows.append({
             "plant_code": str(pc),
             "content_text": content_text,
         })
-
     return pd.DataFrame(rows)
 
 
@@ -216,6 +240,10 @@ async def run_pipeline(stage: str, sample: int, model: str) -> None:
         else [stage]
     )
 
+    # Pre-load all content data once to avoid repeated pCloud reads
+    print("\nPre-loading content data...")
+    cache = preload_all_content(plants_df, sample_codes)
+
     for s in stages_to_run:
         print(f"\n{'='*60}")
         print(f"Running stage: {s}")
@@ -235,7 +263,7 @@ async def run_pipeline(stage: str, sample: int, model: str) -> None:
             print(f"Saved article relevance results to {out_path}")
 
         elif s == "content_relevance":
-            df = prepare_content_relevance_df(plants_df, sample_codes)
+            df = prepare_content_relevance_df(plants_df, sample_codes, cache)
             if df.empty:
                 print("No data for content relevance. Skipping.")
                 continue
@@ -248,7 +276,7 @@ async def run_pipeline(stage: str, sample: int, model: str) -> None:
             print(f"Saved content relevance results to {out_path}")
 
         elif s == "opposition":
-            df = prepare_opposition_df(plants_df, sample_codes)
+            df = prepare_opposition_df(plants_df, sample_codes, cache)
             if df.empty:
                 print("No data for opposition classification. Skipping.")
                 continue
@@ -261,7 +289,7 @@ async def run_pipeline(stage: str, sample: int, model: str) -> None:
             print(f"Saved opposition classification results to {out_path}")
 
         elif s == "narrative":
-            df = prepare_opposition_df(plants_df, sample_codes)
+            df = prepare_opposition_df(plants_df, sample_codes, cache)
             if df.empty:
                 print("No data for narrative extraction. Skipping.")
                 continue

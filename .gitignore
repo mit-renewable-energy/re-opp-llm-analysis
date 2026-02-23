@@ -14,8 +14,9 @@ dataverse_export/
 archive/
 viz/
 
-# GABRIEL comparison outputs
+# GABRIEL comparison outputs and generated figures
 scripts/gabriel_comparison/outputs/
+scripts/gabriel_comparison/figures/
 
 # Security: Credential files (NEVER commit these)
 .env
