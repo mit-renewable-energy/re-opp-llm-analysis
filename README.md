@@ -136,6 +136,23 @@ The pipeline extracts 15 binary variables:
 | `delay` | Evidence of project delays |
 | `co_land_use` | Evidence of co-existing land uses |
 
+## GABRIEL Comparison
+
+Comparison pipeline using OpenAI's [GABRIEL library](https://github.com/openai/GABRIEL):
+
+```bash
+# Run on 50-project sample (default)
+python scripts/gabriel_comparison/run_gabriel_pipeline.py
+
+# Run specific stage
+python scripts/gabriel_comparison/run_gabriel_pipeline.py --stage opposition --sample 100
+
+# Compare results
+python scripts/gabriel_comparison/compare_results.py
+```
+
+See `scripts/gabriel_comparison/README.md` for details.
+
 ## Validation
 
 Human validation interface for assessing model accuracy:
