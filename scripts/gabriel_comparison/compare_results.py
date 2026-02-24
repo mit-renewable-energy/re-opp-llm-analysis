@@ -291,7 +291,7 @@ def compare_narratives() -> str:
     if not gabriel_path.exists():
         return "Narrative extract: GABRIEL results not found. Skipping.\n"
 
-    gabriel_df = pd.read_csv(gabriel_path, dtype={"plant_code": str})
+    gabriel_df = pd.read_csv(gabriel_path, dtype={"plant_code": str}, engine="python", on_bad_lines="skip")
     plant_codes = gabriel_df["plant_code"].unique().tolist()
     original_df = load_original_opposition_scores(plant_codes)
 

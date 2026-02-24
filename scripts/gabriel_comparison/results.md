@@ -10,7 +10,7 @@ Cross-platform validation of the Claude-based opposition analysis pipeline using
 | GABRIEL model | `gpt-5-nano` |
 | Original model | Claude Opus (via `instructor`) |
 | Stages completed | Content relevance, Opposition classification |
-| Stages partial | Narrative extraction (2,689/5,011 matched; API quota exhausted) |
+| Stages completed | Content relevance, Opposition classification, Narrative extraction |
 | Total API cost | ~$5.60 |
 | Total runtime | ~25 min (excluding data loading) |
 
@@ -115,22 +115,22 @@ The median score of 50 (mapping to 3) suggests that for most projects, search re
 
 ---
 
-## Narrative Extraction (Partial: 2,689 / 5,011 Projects)
+## Narrative Extraction (5,011 Projects)
 
-Narrative extraction completed for 2,905 of 5,011 projects before the OpenAI API quota was exhausted. Of these, 2,689 were successfully matched back to plant codes (93% match rate; unmatched cases are due to the model renaming projects in its output key). GABRIEL's checkpointing system saved progress, so re-running `--stage narrative` will resume from where it stopped.
+Both pipelines produced narrative summaries for all 5,011 projects. GABRIEL used `gabriel.extract` with `modality="text"` to generate 3-4 sentence summaries of public perceptions.
 
 ### Narrative Coverage
 
 | Category | Count | Percentage |
 |----------|-------|------------|
-| Both pipelines produced a narrative | 1,259 | 46.8% |
-| Only Claude produced a narrative | 559 | 20.8% |
-| Only GABRIEL produced a narrative | 270 | 10.0% |
-| Neither produced a narrative | 601 | 22.4% |
+| Both pipelines produced a narrative | 2,487 | 49.6% |
+| Only Claude produced a narrative | 899 | 17.9% |
+| Only GABRIEL produced a narrative | 588 | 11.7% |
+| Neither produced a narrative | 1,037 | 20.7% |
 
-Claude produced substantive narratives for 67.6% of projects compared to GABRIEL's 56.9%. This gap partly reflects GABRIEL's stricter "No relevant info found" threshold, and partly that ~42% of projects haven't been processed by GABRIEL yet (the remaining 2,322 are awaiting API quota replenishment).
+Claude produced substantive narratives for 67.6% of projects compared to GABRIEL's 61.4%. This gap suggests Claude is somewhat more willing to synthesize a narrative from marginal evidence, while GPT-5-nano more readily returns "No relevant info found."
 
-GABRIEL narratives are longer on average (421 chars vs 347 chars for Claude), suggesting more detailed summaries when the model does find relevant information.
+GABRIEL narratives are longer on average (442 chars vs 337 chars for Claude), suggesting more detailed summaries when the model does find relevant information.
 
 ### Example: Side-by-Side Narrative Comparison
 
@@ -187,16 +187,13 @@ python scripts/gabriel_comparison/compare_results.py
 
 # Re-run full pipeline (requires OpenAI API key)
 python scripts/gabriel_comparison/run_gabriel_pipeline.py --sample 5011
-
-# Complete narrative extraction (resumes from checkpoint)
-python scripts/gabriel_comparison/run_gabriel_pipeline.py --stage narrative --sample 5011
 ```
 
 Raw data files:
 - `outputs/content_relevance/results.csv` — GABRIEL content relevance scores (5,011 rows)
 - `outputs/opposition_classify/results.csv` — GABRIEL opposition classifications (5,011 rows)
-- `outputs/narrative_extract/results.csv` — GABRIEL narrative extractions (2,689 rows, partial)
+- `outputs/narrative_extract/results.csv` — GABRIEL narrative extractions (5,011 rows)
 - `outputs/comparison_results/opposition_comparison_stats.csv` — Per-variable agreement metrics
 - `outputs/comparison_results/opposition_comparison_raw.csv` — Row-level merged comparison data
-- `outputs/comparison_results/narrative_comparison.csv` — Side-by-side narrative comparison (2,689 rows)
+- `outputs/comparison_results/narrative_comparison.csv` — Side-by-side narrative comparison (5,011 rows)
 - `outputs/comparison_results/comparison_report.txt` — Text summary

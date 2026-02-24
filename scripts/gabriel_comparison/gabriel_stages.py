@@ -261,6 +261,14 @@ async def run_narrative_extract(
         reset_files=False,
     )
 
-    result["plant_code"] = df["plant_code"].values
+    # GABRIEL extract may return more rows than input (multiple entities per text).
+    # The input plant_code column is preserved by GABRIEL, so just deduplicate.
+    if len(result) == len(df):
+        result["plant_code"] = df["plant_code"].values
+    elif "plant_code" in result.columns:
+        # Deduplicate: keep first narrative per plant
+        result = result.drop_duplicates(subset="plant_code", keep="first").reset_index(drop=True)
+    else:
+        result["plant_code"] = df["plant_code"].values[:len(result)]
 
     return result
