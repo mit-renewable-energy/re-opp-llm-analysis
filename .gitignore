@@ -18,6 +18,9 @@ viz/
 scripts/gabriel_comparison/outputs/
 scripts/gabriel_comparison/figures/
 
+# Blog drafts
+blog_drafts/
+
 # Security: Credential files (NEVER commit these)
 .env
 .env.local
